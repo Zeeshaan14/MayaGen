@@ -29,7 +29,7 @@ export default function RegisterPage() {
       });
       router.push("/login?registered=true");
     } catch (err: any) {
-      setError(err.response?.data?.detail || "Registration failed");
+      setError(err.response?.data?.error || err.response?.data?.detail || "Registration failed");
     } finally {
       setLoading(false);
     }

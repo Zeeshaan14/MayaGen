@@ -9,10 +9,11 @@ from ..core import security
 from ..database import get_session
 from ..models import User
 from .deps import get_current_user
+from ..helpers import api_response_helper as responses
 
 router = APIRouter()
 
-@router.post("/register", response_model=dict)
+@router.post("/register")
 async def register(
     username: str, 
     email: str, 
@@ -22,9 +23,10 @@ async def register(
     # Check existing user
     result = await session.execute(select(User).where((User.username == username) | (User.email == email)))
     if result.scalars().first():
-        raise HTTPException(
+        return responses.api_error(
             status_code=400,
-            detail="Username or email already registered"
+            message="Registration Failed",
+            error="Username or email already registered"
         )
     
     # Create User
@@ -35,7 +37,11 @@ async def register(
     )
     session.add(db_user)
     await session.commit()
-    return {"status": "created", "username": username}
+    return responses.api_success(
+        status_code=201,
+        message="User registered successfully",
+        data={"username": username}
+    )
 
 @router.post("/token")
 async def login_for_access_token(
@@ -47,10 +53,10 @@ async def login_for_access_token(
     user = result.scalars().first()
     
     if not user or not security.verify_password(form_data.password, user.hashed_password):
-        raise HTTPException(
+        return responses.api_error(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
+            message="Login Failed",
+            error="Incorrect username or password"
         )
         
     # Create Token
@@ -58,13 +64,19 @@ async def login_for_access_token(
     access_token = security.create_access_token(
         data={"sub": user.username}, expires_delta=access_token_expires
     )
-    return {"access_token": access_token, "token_type": "bearer"}
+    return responses.api_success(
+        message="Login Successful",
+        data={"access_token": access_token, "token_type": "bearer"}
+    )
 
 @router.get("/me")
 async def read_users_me(current_user: User = Depends(get_current_user)):
-    return {
-        "id": current_user.id,
-        "username": current_user.username,
-        "email": current_user.email,
-        "created_at": current_user.created_at
-    }
+    return responses.api_success(
+        message="User Profile Retrieved",
+        data={
+            "id": current_user.id,
+            "username": current_user.username,
+            "email": current_user.email,
+            "created_at": current_user.created_at.isoformat()
+        }
+    )

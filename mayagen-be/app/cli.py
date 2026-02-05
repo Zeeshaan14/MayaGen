@@ -65,7 +65,7 @@ def run_batch_generation():
         final_path = cat_dir / filename
         
         try:
-            provider.generate(prompt_text, str(final_path), width=512, height=512 if args.model == "lcm" else 768, workflow_path=workflow_path)
+            provider.generate(prompt_text, str(final_path), width=512, height=512 if args.model == "lcm" else 512, workflow_path=workflow_path)
             print(f"   -> Saved to {category}/{filename}")
         except Exception as e:
             print(f"[Error] Generation failed: {e}")

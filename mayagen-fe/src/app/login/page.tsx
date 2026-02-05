@@ -32,9 +32,9 @@ export default function LoginPage() {
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
       });
 
-      login(res.data.access_token);
+      login(res.data.data.access_token);
     } catch (err: any) {
-      setError(err.response?.data?.detail || "Login failed");
+      setError(err.response?.data?.error || err.response?.data?.detail || "Login failed");
     } finally {
       setLoading(false);
     }

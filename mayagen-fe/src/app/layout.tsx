@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { Toaster } from "sonner";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -18,6 +19,7 @@ export const metadata: Metadata = {
 };
 
 import { AuthProvider } from "@/context/AuthContext";
+import { AppDock } from "@/components/layout/AppDock";
 
 export default function RootLayout({
   children,
@@ -31,6 +33,8 @@ export default function RootLayout({
       >
         <AuthProvider>
           {children}
+          <AppDock />
+          <Toaster theme="dark" position="bottom-right" richColors />
         </AuthProvider>
       </body>
     </html>

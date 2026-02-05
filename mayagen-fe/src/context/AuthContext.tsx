@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 interface User {
   id: number;
@@ -36,11 +37,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setLoading(false);
         return;
       }
-      const res = await api.get("/auth/me"); // Requires endpoint /auth/me
-      setUser(res.data);
-    } catch (err) {
-      console.error("Auth Check Failed", err);
-      logout();
+      const res = await api.get("/auth/me"); 
+      // API Format: { success: true, message: "...", data: { ... } }
+      if (res.data.success) {
+          setUser(res.data.data);
+      }
+    } catch (err: any) {
+      // Only log if it's NOT a 401 (Unauthorized) error which is expected on session expiry
+      if (err.response?.status !== 401) {
+        console.error("Auth Check Failed", err);
+      }
+      // If 401, we just don't set user, effectively logged out
     } finally {
       setLoading(false);
     }
@@ -59,6 +66,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const logout = () => {
     localStorage.removeItem("access_token");
     setUser(null);
+    toast.info("Logged out successfully");
     router.push("/login");
   };
 

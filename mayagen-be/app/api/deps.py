@@ -9,6 +9,7 @@ from ..database import get_session
 from ..models import User
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
+oauth2_scheme_optional = OAuth2PasswordBearer(tokenUrl="auth/token", auto_error=False)
 
 async def get_current_user(
     token: str = Depends(oauth2_scheme),
@@ -34,7 +35,7 @@ async def get_current_user(
     return user
 
 async def get_current_user_optional(
-    token: Optional[str] = Depends(oauth2_scheme),
+    token: Optional[str] = Depends(oauth2_scheme_optional),
     session: AsyncSession = Depends(get_session)
 ) -> Optional[User]:
     if not token:

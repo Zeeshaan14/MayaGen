@@ -34,7 +34,7 @@ class ComfyUIProvider:
         with urllib.request.urlopen(f"http://{self.server_address}/history/{prompt_id}") as response:
             return json.loads(response.read())
 
-    def generate(self, prompt_text: str, output_path: str, width: int = 512, height: int = 768, workflow_path: Path = None):
+    def generate(self, prompt_text: str, output_path: str, width: int = 512, height: int = 512, workflow_path: Path = None):
         """
         Main function to generate an image from text.
         """
