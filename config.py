@@ -20,8 +20,8 @@ CONFIG = {
         "timeout": 300
     },
     "COMFYUI": {
-        "server_address": "127.0.0.1:8188",
-        "workflow_json_path": "workflow_sd15.json", # Switched to SD1.5 for Photon model
+        "server_address": "20.244.80.13:8188", # REPLACE THIS with your VM's Public IP!
+        "workflow_json_path": "workflow_sd15.json",
         "output_dir": "comfy_output"
     },
     "FORGE": {
@@ -33,3 +33,4 @@ CONFIG = {
     "OUTPUT_FOLDER": "synthetic_dataset",
     "IMAGE_PREFIX": "img_",
 }
+    
