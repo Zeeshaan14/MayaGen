@@ -1,64 +1,263 @@
-import Image from "next/image";
+'use client';
+
+import { useState, useEffect } from 'react';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Loader2, Sparkles, Image as ImageIcon, AlertCircle, Cpu, Cloud, Settings, Layers, FolderOpen } from "lucide-react";
 
 export default function Home() {
+  const [prompt, setPrompt] = useState('');
+  const [width, setWidth] = useState(512);
+  const [height, setHeight] = useState(768);
+  const [provider, setProvider] = useState('comfyui');
+  const [model, setModel] = useState('sd15');
+  const [category, setCategory] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [gallery, setGallery] = useState<{url: string, filename: string, category: string}[]>([]);
+
+  // Fetch Gallery
+  const fetchGallery = async () => {
+      try {
+          const res = await fetch('http://127.0.0.1:8000/images');
+          if (res.ok) {
+              const data = await res.json();
+              setGallery(data.images);
+          }
+      } catch (e) {
+          console.error("Failed to fetch gallery", e);
+      }
+  };
+
+  // Initial Load
+  useEffect(() => {
+    fetchGallery();
+  }, []);
+
+  const generateImage = async () => {
+    if (!prompt) return;
+    
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch('http://127.0.0.1:8000/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          prompt,
+          filename_prefix: "mayagen_ui",
+          width,
+          height,
+          provider,
+          model,
+          category: category || "uncategorized"
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`API Error: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      if (data.status === 'success') {
+        fetchGallery(); // Refresh gallery to show new image
+      } else {
+        setError("Generation failed without details.");
+      }
+
+    } catch (err) {
+        setError(err instanceof Error ? err.message : "An unknown error occurred");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="flex h-screen bg-neutral-950 text-neutral-100 overflow-hidden font-sans">
+      
+      {/* Sidebar: Controls */}
+      <aside className="w-96 flex-shrink-0 border-r border-neutral-800 bg-neutral-900/50 backdrop-blur p-6 overflow-y-auto hidden md:block">
+        <div className="flex items-center gap-2 mb-8">
+            <Sparkles className="w-6 h-6 text-indigo-400" />
+            <span className="text-xl font-bold bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent">MayaGen</span>
+            <Badge variant="outline" className="ml-auto border-indigo-500/30 text-indigo-400 text-xs">v1.2 Studio</Badge>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        <div className="space-y-6">
+            
+            {/* Prompt */}
+            <div className="space-y-2">
+                <Label htmlFor="prompt" className="flex items-center gap-2 text-neutral-300">
+                    <Layers className="w-4 h-4" /> Prompt
+                </Label>
+                <textarea 
+                    id="prompt" 
+                    placeholder="Describe your imagination..." 
+                    className="w-full min-h-[100px] p-3 rounded-md bg-neutral-950 border border-neutral-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm resize-y"
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                />
+            </div>
+
+            {/* Provider */}
+            <div className="space-y-2">
+                <Label className="flex items-center gap-2 text-neutral-300">
+                    <Cpu className="w-4 h-4" /> Provider
+                </Label>
+                <Select value={provider} onValueChange={setProvider}>
+                    <SelectTrigger className="bg-neutral-950 border-neutral-700">
+                        <SelectValue placeholder="Select Provider" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-neutral-900 border-neutral-700 text-neutral-100">
+                        <SelectItem value="comfyui">Azure ComfyUI</SelectItem>
+                        <SelectItem value="openai">OpenAI (Mock)</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+
+            {/* Model (Only if ComfyUI) */}
+            {provider === 'comfyui' && (
+                <div className="space-y-2">
+                    <Label className="flex items-center gap-2 text-neutral-300">
+                        <Layers className="w-4 h-4" /> Model
+                    </Label>
+                    <Select value={model} onValueChange={setModel}>
+                        <SelectTrigger className="bg-neutral-950 border-neutral-700">
+                            <SelectValue placeholder="Select Model" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-neutral-900 border-neutral-700 text-neutral-100">
+                            <SelectItem value="sd15">DreamShaper 8 (Best Quality)</SelectItem>
+                            <SelectItem value="lcm">SD 1.5 Base (Standard)</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+            )}
+
+            {/* Category */}
+            <div className="space-y-2">
+                <Label htmlFor="category" className="flex items-center gap-2 text-neutral-300">
+                    <FolderOpen className="w-4 h-4" /> Category
+                </Label>
+                <Input 
+                    id="category" 
+                    placeholder="e.g. portraits" 
+                    className="bg-neutral-950 border-neutral-700"
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                />
+            </div>
+
+            {/* Resolution */}
+            <div className="space-y-2">
+                <Label className="flex items-center gap-2 text-neutral-300">
+                    <Settings className="w-4 h-4" /> Resolution
+                </Label>
+                <div className="grid grid-cols-2 gap-2">
+                    <div className="relative">
+                        <span className="absolute left-2 top-2 text-xs text-neutral-500">W</span>
+                        <Input 
+                            type="number" 
+                            className="bg-neutral-950 border-neutral-700 pl-6"
+                            value={width}
+                            onChange={(e) => setWidth(Number(e.target.value))}
+                        />
+                    </div>
+                    <div className="relative">
+                        <span className="absolute left-2 top-2 text-xs text-neutral-500">H</span>
+                        <Input 
+                            type="number" 
+                            className="bg-neutral-950 border-neutral-700 pl-6"
+                            value={height}
+                            onChange={(e) => setHeight(Number(e.target.value))}
+                        />
+                    </div>
+                </div>
+            </div>
+
+            {/* Generate Button */}
+            <Button 
+                className="w-full h-12 text-base bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 text-white font-semibold shadow-xl shadow-indigo-500/20 active:scale-[0.98] transition-transform"
+                onClick={generateImage}
+                disabled={isLoading || !prompt}
+            >
+                {isLoading ? (
+                    <>
+                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                        Generating...
+                    </>
+                ) : (
+                    <>
+                        Generate
+                        <Sparkles className="ml-2 h-5 w-5" />
+                    </>
+                )}
+            </Button>
+
+            {error && (
+                <div className="p-3 rounded-md bg-red-900/20 border border-red-800 text-red-200 text-xs flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4" />
+                    {error}
+                </div>
+            )}
         </div>
+      </aside>
+
+      {/* Main Content: Gallery */}
+      <main className="flex-1 p-6 md:p-8 overflow-y-auto">
+          <div className="flex items-baseline justify-between mb-8">
+              <h1 className="text-3xl font-bold text-neutral-100 flex items-center gap-3">
+                  <ImageIcon className="w-8 h-8 text-neutral-500" />
+                  Gallery
+              </h1>
+              <span className="text-neutral-500 text-sm font-mono">{gallery.length} items</span>
+          </div>
+
+          {/* Masonry Layout using CSS Columns */}
+          <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-6 space-y-6">
+              {gallery.map((img, idx) => (
+                  <div key={idx} className="break-inside-avoid relative group rounded-xl overflow-hidden bg-neutral-900 border border-neutral-800 hover:border-indigo-500/50 transition-colors">
+                      {/* Image - Natural Aspect Ratio */}
+                      <img 
+                          src={img.url} 
+                          alt={img.filename}
+                          className="w-full h-auto block"
+                          loading="lazy"
+                      />
+                      
+                      {/* Overlay */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-4">
+                          <div className="flex items-center justify-between">
+                              <Badge className="bg-white/10 backdrop-blur hover:bg-white/20 text-white border-none">
+                                  {img.category}
+                              </Badge>
+                              <a 
+                                  href={img.url} 
+                                  target="_blank" 
+                                  className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+                                  title="Open Original"
+                              >
+                                  <FolderOpen className="w-4 h-4" />
+                              </a>
+                          </div>
+                      </div>
+                  </div>
+              ))}
+          </div>
+          
+          {gallery.length === 0 && (
+              <div className="flex flex-col items-center justify-center h-[50vh] text-neutral-500 border-2 border-dashed border-neutral-800 rounded-xl bg-neutral-900/20">
+                  <Sparkles className="w-12 h-12 mb-4 opacity-20" />
+                  <p className="text-lg">Your masterpiece awaits...</p>
+                  <p className="text-sm opacity-50">Use the sidebar to start generating.</p>
+              </div>
+          )}
       </main>
     </div>
   );

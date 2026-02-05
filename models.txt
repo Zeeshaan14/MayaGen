@@ -1,0 +1,7 @@
+wget --content-disposition "https://civitai.com/api/download/models/128713?type=Model&format=SafeTensor&size=pruned&fp=fp16" -O ~/ComfyUI/models/checkpoints/dreamshaper_8.safetensors
+
+wget -O models/checkpoints/v1-5-pruned-emaonly.safetensors https://huggingface.co/runwayml/stable-diffusion-v1-5/resolve/main/v1-5-pruned-emaonly.safetensors
+--2026-02-05 12:28:20--  https://huggingface.co/runwayml/stable-diffusion-v1-5/resolve/main/v1-5-pruned-emaonly.safetensors
+
+
+python3 main.py --listen --cpu

@@ -34,7 +34,7 @@ class ComfyUIProvider:
         with urllib.request.urlopen(f"http://{self.server_address}/history/{prompt_id}") as response:
             return json.loads(response.read())
 
-    def generate(self, prompt_text: str, output_path: str, width: int = 512, height: int = 768):
+    def generate(self, prompt_text: str, output_path: str, width: int = 512, height: int = 768, workflow_path: Path = None):
         """
         Main function to generate an image from text.
         """
@@ -43,7 +43,7 @@ class ComfyUIProvider:
         self.ws.connect(f"ws://{self.server_address}/ws?clientId={self.client_id}")
         
         # 2. Load Workflow Template
-        workflow = self.load_workflow(config.COMFYUI["workflow_json_path"])
+        workflow = self.load_workflow(workflow_path)
         
         # 3. Inject Prompt (Scanning for CLIPTextEncode nodes)
         if "6" in workflow:

@@ -31,7 +31,7 @@
   },
   "4": {
     "inputs": {
-      "ckpt_name": "dreamshaper_8.safetensors"
+      "ckpt_name": "v1-5-pruned-emaonly.safetensors"
     },
     "class_type": "CheckpointLoaderSimple",
     "_meta": {
@@ -41,7 +41,7 @@
   "5": {
     "inputs": {
       "width": 512,
-      "height": 768,
+      "height": 512,
       "batch_size": 1
     },
     "class_type": "EmptyLatentImage",
@@ -64,7 +64,7 @@
   },
   "7": {
     "inputs": {
-      "text": "low quality, worst quality, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, jpeg artifacts, signature, watermark, username, blurry",
+      "text": "low quality, worst quality, bad anatomy, bad hands",
       "clip": [
         "4",
         1
@@ -93,7 +93,7 @@
   },
   "9": {
     "inputs": {
-      "filename_prefix": "Photon",
+      "filename_prefix": "LCM",
       "images": [
         "8",
         0

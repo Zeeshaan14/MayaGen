@@ -16,9 +16,14 @@ ENVIRONMENT = "local" # Options: "local", "docker"
 # ComfyUI Configuration
 COMFYUI = {
     "server_address": "20.244.80.13:8188",  # Azure IP
-    "workflow_json_path": WORKFLOWS_DIR / "workflow_sd15.json",
     "output_dir": "comfy_output", # Temporary folder on server if needed
     "timeout": 300
+}
+
+WORKFLOWS = {
+    "sd15": WORKFLOWS_DIR / "workflow_sd15.json",
+    "flux": WORKFLOWS_DIR / "workflow_flux.json",
+    "lcm": WORKFLOWS_DIR / "workflow_lcm.json"
 }
 
 # General Settings
