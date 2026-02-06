@@ -29,6 +29,9 @@ OUTPUT_DIR.mkdir(exist_ok=True)
 PROVIDER = "comfyui"  # Options: "ollama", "comfyui", "mock"
 ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 
+# API Base URL (for generating image URLs)
+API_BASE_URL = os.getenv("API_BASE_URL", "http://127.0.0.1:8000")
+
 # Database
 DATABASE_URL = os.getenv("DATABASE_URL")
 

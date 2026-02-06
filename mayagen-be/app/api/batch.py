@@ -293,7 +293,7 @@ async def get_batch_images(
         total = total_result.scalar_one()
 
         # Get paginated images
-        base_url = os.getenv("API_BASE_URL", "http://127.0.0.1:8000") + "/images"
+        base_url = config.API_BASE_URL + "/images"
         offset = (page - 1) * limit
         
         statement = (

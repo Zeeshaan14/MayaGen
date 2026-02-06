@@ -11,17 +11,22 @@ from ..models import User
 from .deps import get_current_user
 from ..helpers import api_response_helper as responses
 
+from pydantic import BaseModel, EmailStr
+
+class RegisterRequest(BaseModel):
+    username: str
+    email: str
+    password: str
+
 router = APIRouter()
 
 @router.post("/register")
 async def register(
-    username: str, 
-    email: str, 
-    password: str, 
+    request: RegisterRequest,
     session: AsyncSession = Depends(get_session)
 ):
     # Check existing user
-    result = await session.execute(select(User).where((User.username == username) | (User.email == email)))
+    result = await session.execute(select(User).where((User.username == request.username) | (User.email == request.email)))
     if result.scalars().first():
         return responses.api_error(
             status_code=400,
@@ -31,16 +36,16 @@ async def register(
     
     # Create User
     db_user = User(
-        username=username,
-        email=email,
-        hashed_password=security.get_password_hash(password)
+        username=request.username,
+        email=request.email,
+        hashed_password=security.get_password_hash(request.password)
     )
     session.add(db_user)
     await session.commit()
     return responses.api_success(
         status_code=201,
         message="User registered successfully",
-        data={"username": username}
+        data={"username": request.username}
     )
 
 @router.post("/token")
