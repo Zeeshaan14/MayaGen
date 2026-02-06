@@ -241,7 +241,7 @@ export default function BatchHistoryPage() {
             </p>
             
             <div className="flex justify-end gap-3">
-              <Button variant="outline" onClick={() => setCancelId(null)} className="border-neutral-700 hover:bg-neutral-800 text-neutral-300">
+              <Button onClick={() => setCancelId(null)} className="bg-neutral-800 hover:bg-neutral-700 text-white border-neutral-700">
                 Keep Processing
               </Button>
               <Button onClick={confirmCancel} className="bg-red-600 hover:bg-red-700 text-white border-red-600">
