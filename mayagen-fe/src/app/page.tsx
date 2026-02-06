@@ -43,7 +43,7 @@ export default function Home() {
   const [height, setHeight] = useState(512);
   const [provider, setProvider] = useState('comfyui');
   const [model, setModel] = useState('sd15');
-  const [category, setCategory] = useState('uncategorized');
+  const [category, setCategory] = useState('');
 
   // Auto-resize textarea
   useEffect(() => {
@@ -72,7 +72,12 @@ export default function Home() {
   }, []);
 
   const generateImage = async () => {
-    if (!prompt.trim()) return;
+    if (!prompt.trim()) { toast.error("Please enter a prompt"); return; }
+    if (!category.trim()) { 
+      toast.error("Category is required");
+      setShowAdvanced(true);
+      return; 
+    }
     if (!user) {
       router.push("/login");
       return;
@@ -181,7 +186,7 @@ export default function Home() {
               <textarea
                 ref={textareaRef}
                 placeholder="A futuristic cityscape at sunset, flying cars, neon lights, cyberpunk style..."
-                className="w-full min-h-[80px] max-h-[200px] bg-transparent text-white placeholder:text-neutral-500 focus:outline-none resize-none text-lg"
+                className="w-full min-h-[80px] max-h-[200px] bg-transparent text-white placeholder:text-neutral-500 focus:outline-none resize-none text-lg selection:bg-indigo-500 selection:text-white"
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 onKeyDown={handleKeyDown}
@@ -196,7 +201,7 @@ export default function Home() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="text-neutral-400 hover:text-white h-8 px-3 text-xs"
+                  className="text-neutral-400 hover:text-white hover:bg-neutral-800 h-8 px-3 text-xs"
                   onClick={() => setShowAdvanced(!showAdvanced)}
                   disabled={!user}
                 >
@@ -238,7 +243,7 @@ export default function Home() {
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                   <div className="space-y-2">
                     <label className="text-xs text-neutral-400 flex items-center gap-1.5">
-                      <FolderOpen className="w-3.5 h-3.5" /> Category
+                      <FolderOpen className="w-3.5 h-3.5" /> Category*
                     </label>
                     <Input
                       placeholder="animals/cats"
@@ -256,7 +261,7 @@ export default function Home() {
                       <SelectTrigger className="h-9 bg-neutral-800 border-neutral-700 text-sm">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="bg-neutral-900 border-neutral-700">
+                      <SelectContent className="bg-neutral-900 border-neutral-700 text-neutral-200">
                         <SelectItem value="sd15">DreamShaper 8</SelectItem>
                         <SelectItem value="lcm">SD 1.5 Base</SelectItem>
                       </SelectContent>
@@ -271,7 +276,7 @@ export default function Home() {
                       <SelectTrigger className="h-9 bg-neutral-800 border-neutral-700 text-sm">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="bg-neutral-900 border-neutral-700">
+                      <SelectContent className="bg-neutral-900 border-neutral-700 text-neutral-200">
                         <SelectItem value="comfyui">ComfyUI</SelectItem>
                         <SelectItem value="mock">Mock</SelectItem>
                       </SelectContent>
@@ -284,7 +289,7 @@ export default function Home() {
                       <SelectTrigger className="h-9 bg-neutral-800 border-neutral-700 text-sm">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="bg-neutral-900 border-neutral-700">
+                      <SelectContent className="bg-neutral-900 border-neutral-700 text-neutral-200">
                         <SelectItem value="512">512px</SelectItem>
                         <SelectItem value="768">768px</SelectItem>
                         <SelectItem value="1024">1024px</SelectItem>
@@ -298,7 +303,7 @@ export default function Home() {
                       <SelectTrigger className="h-9 bg-neutral-800 border-neutral-700 text-sm">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="bg-neutral-900 border-neutral-700">
+                      <SelectContent className="bg-neutral-900 border-neutral-700 text-neutral-200">
                         <SelectItem value="512">512px</SelectItem>
                         <SelectItem value="768">768px</SelectItem>
                         <SelectItem value="1024">1024px</SelectItem>

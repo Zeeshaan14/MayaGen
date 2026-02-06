@@ -306,13 +306,13 @@ export default function BatchViewPage() {
         ) : viewMode === 'masonry' ? (
           <div className="columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4">
             {images.map((img, index) => (
-              <GalleryCard key={img.id} image={img} index={index} />
+              <GalleryCard key={img.id} image={img} index={index} batchStatus={batch?.status} />
             ))}
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {images.map((img, index) => (
-              <GalleryCard key={img.id} image={img} isSquare index={index} />
+              <GalleryCard key={img.id} image={img} isSquare index={index} batchStatus={batch?.status} />
             ))}
           </div>
         )}
@@ -321,11 +321,28 @@ export default function BatchViewPage() {
   );
 }
 
-function GalleryCard({ image, isSquare, index }: { image: BatchImage; isSquare?: boolean; index: number }) {
-  const status = image.status?.toUpperCase();
-  const isProcessing = status === 'PENDING' || status === 'PROCESSING';
-  const isFailed = status === 'FAILED';
+function GalleryCard({ image, isSquare, index, batchStatus }: { image: BatchImage; isSquare?: boolean; index: number; batchStatus?: string }) {
+  const rawStatus = image.status?.toUpperCase();
+  
+  // If batch is cancelled, treat pending/queued images as cancelled
+  const isBatchCancelled = batchStatus?.toLowerCase() === 'cancelled';
+  const effectiveStatus = (isBatchCancelled && (rawStatus === 'QUEUED' || rawStatus === 'PENDING')) 
+    ? 'CANCELLED' 
+    : rawStatus;
+
+  const isProcessing = effectiveStatus === 'PENDING' || effectiveStatus === 'PROCESSING';
+  const isFailed = effectiveStatus === 'FAILED';
+  const isCancelled = effectiveStatus === 'CANCELLED';
+
   const isCompleted = status === 'COMPLETED';
+
+  // Force square aspect ratio for placeholders as requested
+  // isSquare prop might be false (masonry), but we want placeholders to be square?
+  // User said: "make the placeholder images to be in 512 *512 resolution itself by default!"
+  // This implies they want the placeholders to take up square space even in masonry?
+  // Or just that the "grid" view (isSquare=true) should be default?
+  // Or that logic below using `aspect-[3/4]` is wrong.
+  // I'll change `aspect-[3/4]` to `aspect-square` globally for placeholders.
 
   return (
     <Link
@@ -334,7 +351,7 @@ function GalleryCard({ image, isSquare, index }: { image: BatchImage; isSquare?:
       style={{ animationDelay: `${index * 50}ms` }}
     >
       {isProcessing ? (
-        <div className={`${isSquare ? 'aspect-square' : 'aspect-[3/4]'} relative overflow-hidden`}>
+        <div className="aspect-square relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-neutral-900 via-neutral-800 to-neutral-900" />
           <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/5 to-transparent" />
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 p-4">
@@ -350,8 +367,15 @@ function GalleryCard({ image, isSquare, index }: { image: BatchImage; isSquare?:
             </div>
           </div>
         </div>
+      ) : isCancelled ? (
+        <div className="aspect-square bg-neutral-950/50 flex flex-col items-center justify-center gap-3 border-neutral-800">
+           <div className="p-3 rounded-full bg-neutral-900 border border-neutral-800">
+             <Clock className="w-8 h-8 text-neutral-700" />
+           </div>
+           <span className="text-sm text-neutral-500">Cancelled</span>
+        </div>
       ) : !isCompleted || !image.url ? (
-        <div className={`${isSquare ? 'aspect-square' : 'aspect-[3/4]'} bg-neutral-900 flex flex-col items-center justify-center gap-3`}>
+        <div className="aspect-square bg-neutral-900 flex flex-col items-center justify-center gap-3">
           <div className="p-3 rounded-full bg-neutral-800">
             <ImageIcon className="w-8 h-8 text-neutral-600" />
           </div>
@@ -381,10 +405,11 @@ function GalleryCard({ image, isSquare, index }: { image: BatchImage; isSquare?:
         <div className="absolute top-3 right-3">
           <Badge className={`text-xs font-medium ${
             isFailed ? 'bg-red-500/20 text-red-400 border border-red-500/30' :
+            isCancelled ? 'bg-neutral-800 text-neutral-400 border border-neutral-700' :
             isProcessing ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 animate-pulse' :
             'bg-amber-500/20 text-amber-400 border border-amber-500/30'
           }`}>
-            {status}
+            {effectiveStatus}
           </Badge>
         </div>
       )}

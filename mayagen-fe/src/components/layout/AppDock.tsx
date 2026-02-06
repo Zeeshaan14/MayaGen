@@ -26,7 +26,7 @@ export function AppDock() {
   const baseItems = [
     {
       title: "Home",
-      icon: <Sparkles className="h-full w-full text-violet-400" />,
+      icon: <Home className="h-full w-full text-violet-400" />,
       href: "/",
     },
     {
@@ -44,14 +44,9 @@ export function AppDock() {
   const authItems = user
     ? [
         {
-          title: user.username,
-          icon: <User className="h-full w-full text-cyan-400" />,
-          href: "/profile",
-        },
-        {
-          title: "Settings",
-          icon: <Settings className="h-full w-full text-slate-300" />,
-          href: "/settings",
+          title: "My Collections",
+          icon: <Layers className="h-full w-full text-cyan-400" />,
+          href: "/collections",
         },
         {
           title: "Logout",

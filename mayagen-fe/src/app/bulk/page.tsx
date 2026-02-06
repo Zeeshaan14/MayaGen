@@ -115,42 +115,59 @@ export default function BulkGeneratePage() {
   );
   
   return (
-    <div className="min-h-screen bg-neutral-950 text-neutral-100 p-4 pb-24">
+    <div className="min-h-screen bg-neutral-950 text-neutral-100 pb-24">
       {/* Header */}
-      <div className="max-w-5xl mx-auto mb-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-indigo-500/10">
-            <Layers className="w-5 h-5 text-indigo-400" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold">Bulk Generate</h1>
-            <p className="text-xs text-neutral-500">Generate datasets with variations</p>
+      <header className="sticky top-0 z-40 backdrop-blur-lg bg-neutral-950/80 border-b border-neutral-800">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Layers className="w-6 h-6 text-amber-400" />
+              <h1 className="text-xl font-bold">Bulk Generate</h1>
+            </div>
+            
+            <Link href="/bulk/history">
+              <Button variant="ghost" className="border border-white/10 bg-white/5 text-white hover:bg-white/10 h-10 px-6 text-sm transition-all duration-200 shadow-sm">
+                <History className="w-4 h-4 mr-2 text-indigo-400" />
+                View Batches
+              </Button>
+            </Link>
           </div>
         </div>
-        <Link href="/bulk/history">
-          <Button variant="outline" size="sm" className="border-neutral-700 text-xs">
-            <History className="w-3 h-3 mr-1" />
-            View Batches
-          </Button>
-        </Link>
-      </div>
+      </header>
       
-      <div className="max-w-5xl mx-auto space-y-3">
+      <main className="max-w-7xl mx-auto px-6 py-8 space-y-6">
         {/* Config Row */}
-        <div className="bg-neutral-900/50 border border-neutral-800 rounded-lg p-3">
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-            <Input placeholder="Batch name" value={name} onChange={(e) => setName(e.target.value)} className="bg-neutral-800 border-neutral-700 h-8 text-xs" />
-            <Input placeholder="Category* (animals/cats)" value={category} onChange={(e) => setCategory(e.target.value)} className="bg-neutral-800 border-neutral-700 h-8 text-xs" />
-            <Input placeholder="Subject* (domestic cat)" value={targetSubject} onChange={(e) => setTargetSubject(e.target.value)} className="bg-neutral-800 border-neutral-700 h-8 text-xs md:col-span-2" />
-            <div className="flex gap-2">
-              <Input type="number" min={1} max={10000} value={totalImages} onChange={(e) => setTotalImages(Number(e.target.value))} className="bg-neutral-800 border-neutral-700 h-8 text-xs w-20" />
+        <div className="bg-neutral-900/50 border border-neutral-800 rounded-xl p-5 shadow-sm">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-neutral-300 ml-1">Batch Name</label>
+              <Input placeholder="e.g. Summer Collection" value={name} onChange={(e) => setName(e.target.value)} className="bg-neutral-950 border-neutral-800 h-10 text-sm focus-visible:ring-indigo-500/50 text-neutral-100 placeholder:text-neutral-600" />
+            </div>
+            
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-neutral-300 ml-1">Category*</label>
+              <Input placeholder="e.g. Animals" value={category} onChange={(e) => setCategory(e.target.value)} className="bg-neutral-950 border-neutral-800 h-10 text-sm focus-visible:ring-indigo-500/50 text-neutral-100 placeholder:text-neutral-600" />
+            </div>
+            
+            <div className="space-y-1.5 md:col-span-2">
+              <label className="text-xs font-medium text-neutral-300 ml-1">Subject Prompt*</label>
+              <Input placeholder="e.g. A cute scottish fold cat" value={targetSubject} onChange={(e) => setTargetSubject(e.target.value)} className="bg-neutral-950 border-neutral-800 h-10 text-sm focus-visible:ring-indigo-500/50 text-neutral-100 placeholder:text-neutral-600" />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-neutral-300 ml-1">Quantity</label>
+              <Input type="number" min={1} max={10000} value={totalImages} onChange={(e) => setTotalImages(Number(e.target.value))} className="bg-neutral-950 border-neutral-800 h-10 text-sm focus-visible:ring-indigo-500/50 text-neutral-100" />
+            </div>
+            
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-neutral-300 ml-1">Model</label>
               <Select value={model} onValueChange={setModel}>
-                <SelectTrigger className="bg-neutral-800 border-neutral-700 h-8 text-xs flex-1">
+                <SelectTrigger className="bg-neutral-950 border-neutral-800 h-10 text-sm focus-visible:ring-indigo-500/50 text-neutral-200">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-neutral-900 border-neutral-700">
-                  <SelectItem value="sd15">DreamShaper</SelectItem>
-                  <SelectItem value="lcm">SD 1.5</SelectItem>
+                <SelectContent className="bg-neutral-900 border-neutral-800 text-neutral-200">
+                  <SelectItem value="sd15">DreamShaper (SD 1.5)</SelectItem>
+                  <SelectItem value="lcm">Fast Turbo (LCM)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -178,27 +195,27 @@ export default function BulkGeneratePage() {
         </div>
         
         {/* Actions */}
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={generatePreview} disabled={isPreviewing || !targetSubject.trim()} className="border-neutral-700 h-8 text-xs">
-            {isPreviewing ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Eye className="w-3 h-3 mr-1" />}
+        <div className="flex gap-3 pt-2">
+          <Button variant="outline" onClick={generatePreview} disabled={isPreviewing || !targetSubject.trim()} className="border-neutral-700 h-10 px-6 text-sm hover:bg-neutral-800 text-neutral-300 hover:text-white">
+            {isPreviewing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Eye className="w-4 h-4 mr-2" />}
             Preview
           </Button>
-          <Button onClick={createBatchJob} disabled={isLoading || !targetSubject.trim() || !category.trim()} className="bg-indigo-600 hover:bg-indigo-700 flex-1 h-8 text-xs">
-            {isLoading ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Play className="w-3 h-3 mr-1" />}
+          <Button onClick={createBatchJob} disabled={isLoading || !targetSubject.trim() || !category.trim()} className="bg-indigo-600 hover:bg-indigo-700 flex-1 h-10 text-sm font-medium">
+            {isLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Play className="w-4 h-4 mr-2" />}
             Generate {totalImages} Images
           </Button>
         </div>
         
         {/* Preview Prompts */}
         {previewPrompts.length > 0 && (
-          <div className="bg-neutral-900/50 border border-neutral-800 rounded-lg p-3 space-y-1">
-            <span className="text-xs text-neutral-500">Sample Prompts:</span>
+          <div className="bg-neutral-900/50 border border-neutral-800 rounded-lg p-4 space-y-2">
+            <span className="text-sm font-medium text-neutral-400">Sample Prompts:</span>
             {previewPrompts.map((p, i) => (
-              <div key={i} className="text-xs text-neutral-400 p-2 bg-neutral-800/50 rounded">{p}</div>
+              <div key={i} className="text-sm text-neutral-300 p-3 bg-neutral-800/50 rounded border border-neutral-800/50">{p}</div>
             ))}
           </div>
         )}
-      </div>
+      </main>
     </div>
   );
 }
@@ -215,23 +232,23 @@ function ChipGroup({
 }) {
   return (
     <div>
-      <div className="flex items-center justify-between mb-1">
-        <span className="text-[10px] text-neutral-500">{title}</span>
-        <div className="flex gap-1">
-          <button onClick={onAll} className="text-[10px] text-indigo-400 hover:text-indigo-300">All</button>
-          <span className="text-neutral-700">|</span>
-          <button onClick={onNone} className="text-[10px] text-neutral-500 hover:text-white">None</button>
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-xs font-medium text-neutral-400 uppercase tracking-wider">{title}</span>
+        <div className="flex gap-2">
+          <button onClick={onAll} className="text-[10px] font-medium text-indigo-400 hover:text-indigo-300">SELECT ALL</button>
+          <span className="text-neutral-700 text-[10px]">|</span>
+          <button onClick={onNone} className="text-[10px] font-medium text-neutral-500 hover:text-neutral-300">NONE</button>
         </div>
       </div>
-      <div className="flex flex-wrap gap-1">
+      <div className="flex flex-wrap gap-2">
         {options.map((opt) => (
           <button
             key={opt}
             onClick={() => onToggle(opt)}
-            className={`px-2 py-0.5 text-[10px] rounded-full border transition-all ${
+            className={`px-3 py-1.5 text-xs font-medium rounded-md border transition-all duration-200 capitalize ${
               selected.includes(opt)
-                ? 'bg-indigo-500/20 border-indigo-500/50 text-indigo-300'
-                : 'bg-neutral-800/50 border-neutral-700 text-neutral-500 hover:border-neutral-600'
+                ? 'bg-indigo-500/20 border-indigo-500 text-indigo-200 shadow-[0_0_10px_-2px_rgba(99,102,241,0.3)]'
+                : 'bg-neutral-800/40 border-neutral-800 text-neutral-400 hover:border-neutral-600 hover:bg-neutral-800 hover:text-neutral-200'
             }`}
           >
             {opt}

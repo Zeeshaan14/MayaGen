@@ -45,7 +45,7 @@ async def generate_image(
             provider=req.provider,
             category=safe_category,
             user_id=current_user.id,
-            status=JobStatus.PENDING 
+            status=JobStatus.QUEUED 
         )
         session.add(db_image)
         await session.commit()
@@ -55,7 +55,7 @@ async def generate_image(
         return responses.api_success(
             message="Job queued successfully",
             data={
-                "status": "pending",
+                "status": "QUEUED",
                 "job_id": db_image.id,
                 "message": "Job queued successfully. Please poll /api/images/{id} for status.",
                 "prompt": req.prompt,

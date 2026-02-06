@@ -233,6 +233,17 @@ async def cancel_batch_job(
             )
         
         batch.status = BatchJobStatus.CANCELLED
+        
+        # Cancel all queued images for this batch
+        from sqlalchemy import update
+        image_stmt = (
+            update(Image)
+            .where(Image.batch_job_id == batch_id)
+            .where(Image.status == JobStatus.QUEUED)
+            .values(status=JobStatus.CANCELLED)
+        )
+        await session.execute(image_stmt)
+        
         await session.commit()
         
         return responses.api_success(

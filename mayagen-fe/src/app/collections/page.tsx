@@ -7,9 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Search, Filter, Grid, LayoutGrid, Image as ImageIcon, User, Calendar, Sparkles, FolderOpen, Clock, AlertCircle, RefreshCw } from "lucide-react";
+import { Loader2, Search, Filter, Grid, LayoutGrid, Image as ImageIcon, FolderOpen, Clock, AlertCircle, RefreshCw, Lock, Globe } from "lucide-react";
 import Link from 'next/link';
 import { toast } from "sonner";
+import { useRouter } from 'next/navigation';
 
 interface GalleryImage {
   id: number;
@@ -32,8 +33,9 @@ const MODEL_NAMES: Record<string, string> = {
   flux: "Flux",
 };
 
-export default function GalleryPage() {
-  const { user } = useAuth();
+export default function CollectionsPage() {
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
   const [gallery, setGallery] = useState<GalleryImage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -41,36 +43,53 @@ export default function GalleryPage() {
   const [modelFilter, setModelFilter] = useState('all');
   const [viewMode, setViewMode] = useState<'grid' | 'masonry'>('masonry');
 
-  // Extract unique categories
-  const categories = [...new Set(gallery.map(img => img.category))];
+  // Redirect if not logged in
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, authLoading, router]);
 
-  // Filtered gallery
-  const filteredGallery = gallery.filter(img => {
-    const matchesSearch = img.prompt.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          img.filename.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = categoryFilter === 'all' || img.category === categoryFilter;
-    const matchesModel = modelFilter === 'all' || img.model === modelFilter;
-    return matchesSearch && matchesCategory && matchesModel;
-  });
-
-  const fetchGallery = async () => {
+  const fetchCollection = async () => {
     setIsLoading(true);
     try {
-      const res = await api.get('/images');
+      const res = await api.get('/images/me');
       if (res.data.success) {
         setGallery(res.data.data.images);
       }
-    } catch (e) {
-      console.error("Failed to fetch gallery", e);
-      toast.error("Failed to load gallery");
+    } catch (e: any) {
+      console.error("Failed to fetch collection", e);
+      toast.error("Failed to load your collection");
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchGallery();
-  }, []);
+    if (user) {
+      fetchCollection();
+    }
+  }, [user]);
+
+  // Extract unique categories
+  const categories = [...new Set(gallery.map(img => img.category))];
+
+  // Filtered gallery
+  const filteredGallery = gallery.filter(img => {
+    const matchesSearch = img.prompt.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          img.filename?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = categoryFilter === 'all' || img.category === categoryFilter;
+    const matchesModel = modelFilter === 'all' || img.model === modelFilter;
+    return matchesSearch && matchesCategory && matchesModel;
+  });
+
+  if (authLoading || !user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-neutral-950">
+        <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100 pb-24">
@@ -79,20 +98,21 @@ export default function GalleryPage() {
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <ImageIcon className="w-6 h-6 text-indigo-400" />
-              <h1 className="text-xl font-bold">Gallery</h1>
-              <Badge variant="secondary" className="bg-neutral-800 text-neutral-300">
-                {filteredGallery.length} images
-              </Badge>
+              <div className="p-2 bg-indigo-500/10 rounded-lg">
+                <FolderOpen className="w-6 h-6 text-indigo-400" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold">My Collections</h1>
+                <p className="text-xs text-neutral-500 text-left">Your personal gallery ({filteredGallery.length} items)</p>
+              </div>
             </div>
             
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={fetchGallery} className="border-neutral-800 hover:bg-neutral-800 text-neutral-400">
+              <Button variant="outline" size="sm" onClick={fetchCollection} className="border-neutral-800 hover:bg-neutral-800 text-neutral-400">
                 <RefreshCw className="w-4 h-4" />
               </Button>
               <Link href="/">
                 <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700">
-                  <Sparkles className="w-4 h-4 mr-2" />
                   Generate New
                 </Button>
               </Link>
@@ -105,7 +125,7 @@ export default function GalleryPage() {
             <div className="relative flex-1 min-w-[200px] max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
               <Input
-                placeholder="Search prompts..."
+                placeholder="Search your generations..."
                 className="pl-9 bg-neutral-900 border-neutral-800 focus:border-indigo-500"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -173,26 +193,22 @@ export default function GalleryPage() {
           </div>
         ) : filteredGallery.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-[50vh] text-neutral-500">
-            <ImageIcon className="w-16 h-16 mb-4 opacity-20" />
-            <p className="text-lg mb-2">No images found</p>
+            <FolderOpen className="w-16 h-16 mb-4 opacity-20" />
+            <p className="text-lg mb-2">Your collection is empty</p>
             <p className="text-sm opacity-50">
-              {searchQuery || categoryFilter !== 'all' || modelFilter !== 'all'
-                ? "Try adjusting your filters"
-                : "Start generating to see your creations here"}
+              Start generating images to build your personal gallery
             </p>
           </div>
         ) : viewMode === 'masonry' ? (
-          // Masonry Layout
           <div className="columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4">
             {filteredGallery.map((img) => (
-              <GalleryCard key={img.id} image={img} />
+              <CollectionCard key={img.id} image={img} />
             ))}
           </div>
         ) : (
-          // Grid Layout
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {filteredGallery.map((img) => (
-              <GalleryCard key={img.id} image={img} isSquare />
+              <CollectionCard key={img.id} image={img} isSquare />
             ))}
           </div>
         )}
@@ -201,16 +217,15 @@ export default function GalleryPage() {
   );
 }
 
-function GalleryCard({ image, isSquare }: { image: GalleryImage; isSquare?: boolean }) {
-  // Case-insensitive status check
+function CollectionCard({ image, isSquare }: { image: GalleryImage; isSquare?: boolean }) {
   const status = image.status?.toUpperCase();
   const isQueued = status === 'QUEUED';
   const isProcessing = status === 'PROCESSING';
   const isFailed = status === 'FAILED';
   const isCompleted = status === 'COMPLETED';
+  const isCancelled = status === 'CANCELLED';
   
-  // Calculate aspect ratio
-  const aspectRatio = image.width && image.height ? image.width / image.height : 0.75; // Default to 3:4 if unknown
+  const aspectRatio = image.width && image.height ? image.width / image.height : 0.75;
 
   return (
     <Link
@@ -218,25 +233,33 @@ function GalleryCard({ image, isSquare }: { image: GalleryImage; isSquare?: bool
       style={!isSquare ? { aspectRatio: `${aspectRatio}` } : undefined}
       className={`relative group rounded-xl overflow-hidden bg-neutral-900 border border-neutral-800 hover:border-indigo-500/50 transition-all duration-300 block ${isSquare ? 'aspect-square' : 'break-inside-avoid mb-4'}`}
     >
-      {isQueued ? (
-        /* Queued State */
-        <div className="w-full h-full bg-neutral-900 flex flex-col items-center justify-center gap-2 relative">
-          <div className="w-12 h-12 rounded-full bg-amber-500/10 flex items-center justify-center">
-            <Clock className="w-6 h-6 text-amber-500" />
+      {/* Visibility Badge (Only visible on hover or if private?) */}
+      <div className="absolute top-2 left-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+         {image.is_public ? (
+            <Badge className="bg-neutral-900/80 backdrop-blur text-neutral-400 border border-neutral-800 text-[10px] px-1.5 h-5 gap-1">
+               <Globe className="w-3 h-3" /> Public
+            </Badge>
+         ) : (
+            <Badge className="bg-neutral-900/80 backdrop-blur text-amber-500 border border-amber-500/20 text-[10px] px-1.5 h-5 gap-1">
+               <Lock className="w-3 h-3" /> Private
+            </Badge>
+         )}
+      </div>
+
+      {isQueued || isCancelled ? (
+        <div className="w-full h-full bg-neutral-900 flex flex-col items-center justify-center gap-2">
+          <div className="w-12 h-12 rounded-full bg-neutral-800 flex items-center justify-center">
+            <Clock className={`w-6 h-6 ${isCancelled ? 'text-neutral-500' : 'text-amber-500'}`} />
           </div>
-          <span className="text-xs font-medium text-amber-500">Queued</span>
+          <span className={`text-xs font-medium ${isCancelled ? 'text-neutral-500' : 'text-amber-500'}`}>
+             {isCancelled ? 'Cancelled' : 'Queued'}
+          </span>
           <p className="text-[10px] text-neutral-500 max-w-[120px] text-center line-clamp-2">{image.prompt}</p>
         </div>
       ) : isProcessing ? (
-        /* Processing State - Skeleton Loading */
         <div className="w-full h-full relative overflow-hidden">
-          {/* Animated gradient background */}
           <div className="absolute inset-0 bg-gradient-to-br from-neutral-900 via-neutral-800 to-neutral-900" />
-          
-          {/* Shimmer effect */}
           <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/5 to-transparent" />
-          
-          {/* Content */}
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 p-4">
             <div className="relative">
               <div className="w-16 h-16 rounded-full bg-indigo-500/10 flex items-center justify-center">
@@ -244,29 +267,20 @@ function GalleryCard({ image, isSquare }: { image: GalleryImage; isSquare?: bool
               </div>
               <div className="absolute inset-0 rounded-full border-2 border-indigo-500/30 animate-ping" />
             </div>
-            <div className="text-center">
-              <span className="text-xs font-semibold text-indigo-400 uppercase tracking-widest">Generating</span>
-              <p className="text-[10px] text-neutral-500 mt-1 line-clamp-2 max-w-[120px]">{image.prompt?.slice(0, 50)}...</p>
-            </div>
           </div>
         </div>
       ) : isFailed ? (
-        /* Failed State */
         <div className="w-full h-full bg-neutral-900 flex flex-col items-center justify-center gap-2">
           <div className="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center">
             <AlertCircle className="w-6 h-6 text-red-500" />
           </div>
           <span className="text-xs font-medium text-red-400">Failed</span>
-          <p className="text-[10px] text-neutral-500 max-w-[120px] text-center line-clamp-2">{image.prompt}</p>
         </div>
       ) : !image.url ? (
-        /* No URL fallback */
         <div className="w-full h-full bg-neutral-900 flex flex-col items-center justify-center gap-2">
           <ImageIcon className="w-10 h-10 text-neutral-700" />
-          <span className="text-xs text-neutral-600">Loading Image...</span>
         </div>
       ) : (
-        /* Completed Image */
         <img
           src={image.url}
           alt={image.filename}
@@ -275,7 +289,7 @@ function GalleryCard({ image, isSquare }: { image: GalleryImage; isSquare?: bool
         />
       )}
 
-      {/* Hover Overlay - Only for completed */}
+      {/* Hover Overlay */}
       {isCompleted && image.url && (
         <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-end p-4">
           <p className="text-white text-sm line-clamp-2 mb-2 font-medium">{image.prompt}</p>
@@ -283,25 +297,7 @@ function GalleryCard({ image, isSquare }: { image: GalleryImage; isSquare?: bool
             <Badge className="bg-white/10 text-white border-none text-xs">
               {MODEL_NAMES[image.model] || image.model}
             </Badge>
-            <div className="flex items-center gap-1">
-              <User className="w-3 h-3" />
-              <span>{image.created_by}</span>
-            </div>
           </div>
-        </div>
-      )}
-
-      {/* Status Badge (visible if not completed, or if completed and hovering? Actually usually hidden for completed to show clean image) */}
-      {!isCompleted && (
-        <div className="absolute top-2 right-2">
-          <Badge className={`text-xs ${
-            isFailed ? 'bg-red-900/80 text-red-300' : 
-            isProcessing ? 'bg-indigo-900/80 text-indigo-300 animate-pulse' : 
-            isQueued ? 'bg-amber-900/80 text-amber-300' :
-            'bg-neutral-800 text-neutral-400'
-          }`}>
-            {status}
-          </Badge>
         </div>
       )}
     </Link>

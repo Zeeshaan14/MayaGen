@@ -31,6 +31,8 @@ export default function BatchHistoryPage() {
     if (user) fetchBatches();
   }, [user]);
 
+  const [cancelId, setCancelId] = useState<number | null>(null);
+
   const fetchBatches = async () => {
     setLoading(true);
     try {
@@ -43,25 +45,32 @@ export default function BatchHistoryPage() {
     }
   };
 
-  const cancelBatch = async (id: number, e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const confirmCancel = async () => {
+    if (!cancelId) return;
     try {
-      await api.delete(`/batch/${id}`);
+      await api.delete(`/batch/${cancelId}`);
       toast.success('Batch cancelled');
       fetchBatches();
     } catch (e: any) {
       toast.error(e.response?.data?.message || 'Failed to cancel');
+    } finally {
+      setCancelId(null);
     }
+  };
+
+  const promptCancel = (id: number, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setCancelId(id);
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'completed': return <CheckCircle className="w-5 h-5 text-green-400" />;
-      case 'generating': return <Loader2 className="w-5 h-5 text-indigo-400 animate-spin" />;
-      case 'queued': return <Clock className="w-5 h-5 text-amber-400" />;
-      case 'failed': return <AlertCircle className="w-5 h-5 text-red-400" />;
-      default: return <Clock className="w-5 h-5 text-slate-500" />;
+      case 'completed': return <CheckCircle className="w-5 h-5 text-green-500" />;
+      case 'generating': return <Loader2 className="w-5 h-5 text-indigo-500 animate-spin" />;
+      case 'queued': return <Clock className="w-5 h-5 text-amber-500" />;
+      case 'failed': return <AlertCircle className="w-5 h-5 text-red-500" />;
+      default: return <Clock className="w-5 h-5 text-neutral-500" />;
     }
   };
 
@@ -71,42 +80,40 @@ export default function BatchHistoryPage() {
       case 'generating': return 'bg-indigo-500';
       case 'queued': return 'bg-amber-500';
       case 'failed': return 'bg-red-500';
-      default: return 'bg-slate-600';
+      default: return 'bg-neutral-600';
     }
   };
 
   const getStatusBadgeStyle = (status: string) => {
     switch (status) {
-      case 'completed': return 'bg-green-500/20 text-green-300 border-green-500/30';
-      case 'generating': return 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30';
-      case 'queued': return 'bg-amber-500/20 text-amber-300 border-amber-500/30';
-      case 'failed': return 'bg-red-500/20 text-red-300 border-red-500/30';
-      default: return 'bg-slate-700/20 text-slate-400 border-slate-600/30';
+      case 'completed': return 'bg-green-500/10 text-green-400 border-green-500/20';
+      case 'generating': return 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20';
+      case 'queued': return 'bg-amber-500/10 text-amber-400 border-amber-500/20';
+      case 'failed': return 'bg-red-500/10 text-red-400 border-red-500/20';
+      default: return 'bg-neutral-800 text-neutral-400 border-neutral-700';
     }
   };
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 gap-4">
-        <div className="relative">
-          <Loader2 className="w-10 h-10 animate-spin text-indigo-400" />
-          <div className="absolute inset-0 rounded-full border-2 border-indigo-500/20 animate-ping" />
-        </div>
-        <p className="text-slate-400 animate-pulse font-medium">Loading...</p>
+      <div className="min-h-screen flex items-center justify-center bg-neutral-950">
+        <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
       </div>
     );
   }
 
   if (!user) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 gap-4">
-        <div className="p-4 rounded-2xl bg-slate-800 border border-slate-700">
-          <Layers className="w-12 h-12 text-slate-500" />
+      <div className="min-h-screen flex flex-col items-center justify-center bg-neutral-950 gap-4">
+        <div className="p-4 rounded-full bg-neutral-900 border border-neutral-800">
+          <Layers className="w-12 h-12 text-neutral-500" />
         </div>
-        <h1 className="text-2xl font-semibold text-white">Login Required</h1>
-        <p className="text-slate-400">Please sign in to view your batch history</p>
+        <div className="text-center">
+          <h1 className="text-xl font-bold text-white">Login Required</h1>
+          <p className="text-neutral-500 text-sm mt-1">Please sign in to view your batch history</p>
+        </div>
         <Link href="/login">
-          <Button className="mt-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-lg shadow-indigo-500/25">
+          <Button className="bg-indigo-600 hover:bg-indigo-700 text-white h-10 px-8">
             Sign In
           </Button>
         </Link>
@@ -115,123 +122,135 @@ export default function BatchHistoryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-4 pb-24">
+    <div className="min-h-screen bg-neutral-950 text-neutral-100 pb-24">
       {/* Header */}
-      <div className="max-w-4xl mx-auto mb-8">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link
-              href="/bulk"
-              className="p-2.5 rounded-xl bg-slate-800 border border-slate-700 hover:bg-slate-700 hover:border-slate-600 transition-all hover:shadow-md"
-            >
-              <ArrowLeft className="w-5 h-5 text-slate-300" />
-            </Link>
-            <div>
-              <h1 className="text-2xl font-semibold text-white">Batch History</h1>
-              <p className="text-slate-400 mt-0.5">{batches.length} batch jobs</p>
+      <header className="sticky top-0 z-40 backdrop-blur-lg bg-neutral-950/80 border-b border-neutral-800">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Link href="/bulk" className="p-2 -ml-2 rounded-lg hover:bg-neutral-800 text-neutral-400 hover:text-white transition-colors">
+                <ArrowLeft className="w-5 h-5" />
+              </Link>
+              <h1 className="text-xl font-bold">Batch History</h1>
+              <Badge variant="secondary" className="bg-neutral-800 text-neutral-300">
+                {batches.length} batches
+              </Badge>
             </div>
+            
+            <Button variant="outline" size="sm" onClick={fetchBatches} className="border-neutral-800 hover:bg-neutral-800 text-neutral-400">
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Refresh
+            </Button>
           </div>
-          <Button
-            variant="outline"
-            onClick={fetchBatches}
-            className="border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white hover:border-slate-600 transition-all rounded-xl"
-          >
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Refresh
-          </Button>
         </div>
-      </div>
+      </header>
 
       {/* Batch List */}
-      <div className="max-w-4xl mx-auto">
+      <main className="max-w-7xl mx-auto px-6 py-8">
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-16 gap-4">
-            <Loader2 className="w-8 h-8 animate-spin text-indigo-400" />
-            <p className="text-slate-400 font-medium">Loading batches...</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="h-48 rounded-xl bg-neutral-900 animate-pulse border border-neutral-800" />
+            ))}
           </div>
         ) : batches.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="p-4 rounded-2xl bg-slate-800 border border-slate-700 mb-4">
-              <Layers className="w-12 h-12 text-slate-500" />
-            </div>
-            <h2 className="text-lg font-semibold text-white mb-2">No batch jobs yet</h2>
-            <p className="text-slate-400 mb-6">Create your first batch to generate images in bulk</p>
+          <div className="text-center py-20 text-neutral-500">
+            <Layers className="w-16 h-16 mx-auto mb-4 opacity-20" />
+            <h2 className="text-lg font-medium text-neutral-300 mb-1">No batch jobs yet</h2>
+            <p className="text-sm mb-6 max-w-sm mx-auto">Create your first batch to generate images in bulk with variations.</p>
             <Link href="/bulk">
-              <Button className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-lg shadow-indigo-500/25">
+              <Button className="bg-indigo-600 hover:bg-indigo-700 text-white">
                 <Sparkles className="w-4 h-4 mr-2" />
                 Create First Batch
               </Button>
             </Link>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {batches.map((batch, index) => (
               <Link
                 key={batch.id}
                 href={`/bulk/view/${batch.id}`}
-                className="block p-5 bg-slate-900/50 border border-slate-800 rounded-2xl hover:border-indigo-600 hover:shadow-xl hover:shadow-indigo-500/10 transition-all duration-300 hover:-translate-y-0.5 group"
-                style={{ animationDelay: `${index * 50}ms` }}
+                className="group block p-5 bg-neutral-900 border border-neutral-800 rounded-xl hover:border-indigo-500/50 transition-all duration-300 relative overflow-hidden"
               >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      {getStatusIcon(batch.status)}
-                      <h3 className="font-semibold text-white text-lg">{batch.name}</h3>
-                      <Badge className={`capitalize border ${getStatusBadgeStyle(batch.status)}`}>
-                        {batch.status}
-                      </Badge>
-                      {batch.generated_count > 0 && (
-                        <Badge className="bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                          <ImageIcon className="w-3 h-3 mr-1" />
-                          {batch.generated_count} images
-                        </Badge>
-                      )}
-                    </div>
-                    <p className="text-slate-300 mb-2 font-medium">{batch.target_subject}</p>
-                    <div className="flex items-center gap-3 text-sm text-slate-500">
-                      <span className="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 font-medium">{batch.category}</span>
-                      <span>•</span>
-                      <span>{new Date(batch.created_at).toLocaleDateString()}</span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-4">
-                    <div className="text-right">
-                      <div className="text-lg font-semibold text-white">{batch.generated_count}/{batch.total_images}</div>
-                      <div className="text-sm text-slate-400">{batch.progress}% complete</div>
-                    </div>
-                    {(batch.status === 'queued' || batch.status === 'generating') && (
-                      <button
-                        onClick={(e) => cancelBatch(batch.id, e)}
-                        className="p-2 rounded-lg text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all"
-                        title="Cancel batch"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    )}
-                    <ChevronRight className="w-5 h-5 text-slate-600 group-hover:text-indigo-400 group-hover:translate-x-1 transition-all" />
-                  </div>
-                </div>
-
-                {/* Progress Bar */}
-                <div className="mt-4 h-2 bg-slate-800 rounded-full overflow-hidden">
+                {/* Status Bar */}
+                <div className="absolute top-0 left-0 right-0 h-1 bg-neutral-800">
                   <div
-                    className={`h-full rounded-full transition-all duration-500 ${getStatusColor(batch.status)}`}
+                    className={`h-full transition-all duration-500 ${getStatusColor(batch.status)}`}
                     style={{ width: `${batch.progress}%` }}
                   />
                 </div>
 
+                <div className="mt-2 flex items-start justify-between mb-4">
+                  <div>
+                    <h3 className="font-semibold text-white text-lg group-hover:text-indigo-400 transition-colors line-clamp-1">{batch.name}</h3>
+                    <p className="text-neutral-400 text-xs mt-1">{new Date(batch.created_at).toLocaleDateString()}</p>
+                  </div>
+                  <Badge className={`capitalize border ${getStatusBadgeStyle(batch.status)}`}>
+                    {batch.status}
+                  </Badge>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-neutral-500">Progress</span>
+                    <span className="text-neutral-300 font-medium">{batch.generated_count} / {batch.total_images}</span>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                     <span className="px-2 py-1 rounded-md bg-neutral-800 text-xs text-neutral-400 font-medium line-clamp-1 flex-1">
+                        {batch.category}
+                     </span>
+                     {(batch.status === 'queued' || batch.status === 'generating') && (
+                       <button
+                         onClick={(e) => promptCancel(batch.id, e)}
+                         className="p-1.5 rounded-md text-neutral-500 hover:text-red-400 hover:bg-neutral-800 transition-all group-hover:bg-neutral-800"
+                         title="Cancel batch"
+                       >
+                         <Trash2 className="w-4 h-4" />
+                       </button>
+                     )}
+                  </div>
+                </div>
+
                 {batch.failed_count > 0 && (
-                  <p className="mt-3 text-sm text-red-400 flex items-center gap-2 font-medium">
-                    <AlertCircle className="w-4 h-4" />
-                    {batch.failed_count} failed
-                  </p>
+                  <div className="mt-3 flex items-center gap-2 text-xs text-red-400 bg-red-500/5 p-2 rounded border border-red-500/10">
+                    <AlertCircle className="w-3 h-3" />
+                    {batch.failed_count} generations failed
+                  </div>
                 )}
               </Link>
             ))}
           </div>
         )}
-      </div>
+      </main>
+
+      {/* Confirmation Modal */}
+      {cancelId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-6 max-w-sm w-full shadow-2xl animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-3 bg-red-500/10 rounded-full">
+                <AlertCircle className="w-6 h-6 text-red-500" />
+              </div>
+              <h3 className="text-lg font-semibold text-white">Cancel Batch?</h3>
+            </div>
+            
+            <p className="text-neutral-400 mb-6 text-sm">
+              Are you sure you want to cancel this batch? This will stop all pending generations. This action cannot be undone.
+            </p>
+            
+            <div className="flex justify-end gap-3">
+              <Button variant="outline" onClick={() => setCancelId(null)} className="border-neutral-700 hover:bg-neutral-800 text-neutral-300">
+                Keep Processing
+              </Button>
+              <Button onClick={confirmCancel} className="bg-red-600 hover:bg-red-700 text-white border-red-600">
+                Yes, Cancel Batch
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

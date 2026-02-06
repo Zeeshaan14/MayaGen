@@ -5,10 +5,11 @@ from sqlmodel import SQLModel, Field, Column, JSON, Relationship, select
 from sqlalchemy.dialects.postgresql import JSONB
 
 class JobStatus(str, Enum):
-    PENDING = "pending"
-    PROCESSING = "processing"
-    COMPLETED = "completed"
-    FAILED = "failed"
+    QUEUED = "QUEUED"
+    PROCESSING = "PROCESSING"
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"
+    CANCELLED = "CANCELLED"
 
 class BatchJobStatus(str, Enum):
     QUEUED = "queued"
@@ -43,7 +44,7 @@ class Image(SQLModel, table=True):
     is_public: bool = Field(default=True)
     
     # Status Tracking
-    status: JobStatus = Field(default=JobStatus.PENDING, index=True)
+    status: JobStatus = Field(default=JobStatus.QUEUED, index=True)
     error_message: Optional[str] = None
     
     # Relationships

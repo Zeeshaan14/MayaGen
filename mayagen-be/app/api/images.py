@@ -13,6 +13,10 @@ from . import deps
 
 router = APIRouter()
 
+from sqlalchemy import case
+
+# ...
+
 @router.get("/images")
 async def list_images(
     session: AsyncSession = Depends(get_session),
@@ -23,20 +27,34 @@ async def list_images(
         # TODO: This hardcoded URL needs to be dynamic or from config
         base_url = "http://127.0.0.1:8000/images"
         
-        # Query DB sorted by created_at desc
-        statement = select(Image, User).join(User, isouter=True).order_by(Image.created_at.desc())
+        # Custom sort order: COMPLETED (1), PROCESSING (2), QUEUED (3), FAILED (4)
+        status_order = case(
+            (Image.status == JobStatus.COMPLETED, 1),
+            (Image.status == JobStatus.PROCESSING, 2),
+            (Image.status == JobStatus.QUEUED, 3),
+            (Image.status == JobStatus.FAILED, 4),
+            else_=5
+        )
+        
+        # Query DB sorted by Status Priority then Created At desc
+        # Query DB sorted by Status Priority then Created At desc
+        # Filter: Only public images AND COMPLETED
+        statement = (
+            select(Image, User)
+            .join(User, isouter=True)
+            .where(Image.is_public == True)
+            .where(Image.status == JobStatus.COMPLETED)
+            .order_by(Image.created_at.desc())
+        )
         results = await session.execute(statement)
         # Results is list of (Image, User) tuples
         
         response_list = []
         for img, user in results:
             # Construct URL based on predictable structure: /images/{category}/{filename}
-            if img.status == JobStatus.COMPLETED:
-                # properly encode category? simplified for now
-                safe_category = img.category.replace("\\", "/") if img.category else "uncategorized"
-                url = f"{base_url}/{safe_category}/{img.filename}"
-            else:
-                url = None
+            # Since we filter by COMPLETED, url is always generated
+            safe_category = img.category.replace("\\", "/") if img.category else "uncategorized"
+            url = f"{base_url}/{safe_category}/{img.filename}"
 
             response_list.append({
                 "id": img.id,
@@ -45,6 +63,8 @@ async def list_images(
                 "url": url,
                 "prompt": img.prompt,
                 "model": img.model,
+                "width": img.width,
+                "height": img.height,
                 "created_at": img.created_at.isoformat(),
                 "created_by": user.username if user else "Anonymous",
                 "is_public": img.is_public,
@@ -59,6 +79,64 @@ async def list_images(
         import traceback
         traceback.print_exc()
         return responses.api_error(status_code=500, message="Failed to list images", error=str(e))
+
+
+@router.get("/images/me")
+async def get_my_images(
+    session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(deps.get_current_user)
+):
+    """Get all images created by the current user (Private & Public)."""
+    try:
+        base_url = "http://127.0.0.1:8000/images"
+        
+        # Custom sort order: COMPLETED (1), PROCESSING (2), QUEUED (3), FAILED (4)
+        status_order = case(
+            (Image.status == JobStatus.COMPLETED, 1),
+            (Image.status == JobStatus.PROCESSING, 2),
+            (Image.status == JobStatus.QUEUED, 3),
+            (Image.status == JobStatus.FAILED, 4),
+            else_=5
+        )
+
+        statement = (
+            select(Image)
+            .where(Image.user_id == current_user.id)
+            .order_by(status_order, Image.created_at.desc())
+        )
+        results = await session.execute(statement)
+        images = results.scalars().all()
+        
+        response_list = []
+        for img in images:
+            url = None
+            if img.status == JobStatus.COMPLETED:
+                safe_category = img.category.replace("\\", "/") if img.category else "uncategorized"
+                url = f"{base_url}/{safe_category}/{img.filename}"
+
+            response_list.append({
+                "id": img.id,
+                "filename": img.filename,
+                "category": img.category,
+                "url": url,
+                "prompt": img.prompt,
+                "model": img.model,
+                "width": img.width,
+                "height": img.height,
+                "created_at": img.created_at.isoformat(),
+                "created_by": current_user.username,
+                "is_public": img.is_public,
+                "status": img.status
+            })
+            
+        return responses.api_success(
+            message="User Collection Retrieved",
+            data={"images": response_list}
+        )
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return responses.api_error(status_code=500, message="Failed to get user collection", error=str(e))
 
 @router.get("/api/images/{image_id}")
 async def get_image(
@@ -109,20 +187,25 @@ async def get_image(
 @router.get("/images/recent")
 async def get_recent_images(
     session: AsyncSession = Depends(get_session),
+    current_user: Optional[User] = Depends(deps.get_current_user_optional),
     limit: int = 8
 ):
-    """Get recent COMPLETED images for the home page showcase."""
+    """Get recent COMPLETED images. If logged in, shows user's images. Else public."""
     try:
         base_url = "http://127.0.0.1:8000/images"
         
-        # Query only completed images, newest first, limited
+        # Custom sort order: COMPLETED (1), PROCESSING (2), QUEUED (3), FAILED (4)
+        # But for Recent Public Feed, we only want COMPLETED + PUBLIC
+        
         statement = (
             select(Image, User)
             .join(User, isouter=True)
+            .where(Image.is_public == True)
             .where(Image.status == JobStatus.COMPLETED)
             .order_by(Image.created_at.desc())
             .limit(limit)
         )
+
         results = await session.execute(statement)
         
         response_list = []

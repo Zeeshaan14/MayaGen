@@ -154,7 +154,7 @@ async def process_batch_jobs():
                     height=batch.height,
                     user_id=batch.user_id,
                     batch_job_id=batch.id,
-                    status=JobStatus.PENDING
+                    status=JobStatus.QUEUED
                 )
                 session.add(image)
             
@@ -176,8 +176,11 @@ async def worker_loop():
     
     while True:
         try:
+            # logger.info("Worker: Checking queue...") 
+            
             # 1. First, check for QUEUED batch jobs to expand
-            await process_batch_jobs()
+            if await process_batch_jobs():
+                continue
             
             # 2. Then, process individual image jobs
             async with get_session_context() as session:
@@ -188,7 +191,7 @@ async def worker_loop():
                     WHERE id = (
                         SELECT id
                         FROM image
-                        WHERE status = 'PENDING'
+                        WHERE status = 'QUEUED'
                         ORDER BY created_at ASC
                         LIMIT 1
                         FOR UPDATE SKIP LOCKED
