@@ -10,7 +10,14 @@ from dotenv import load_dotenv
 BASE_DIR = Path(__file__).resolve().parents[2]
 
 # Load Environment Variables
-ENV_FILE = BASE_DIR / ".env.development"
+# Priority: ENVIRONMENT env var -> .env.{env} -> .env (fallback)
+_env = os.getenv("ENVIRONMENT", "development")
+
+# Try environment-specific file first, then fallback to .env
+ENV_FILE = BASE_DIR / f".env.{_env}"
+if not ENV_FILE.exists():
+    ENV_FILE = BASE_DIR / ".env"
+
 load_dotenv(ENV_FILE)
 
 WORKFLOWS_DIR = BASE_DIR / "workflows"
