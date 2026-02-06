@@ -12,6 +12,7 @@ import {
   LogOut,
   Settings,
   Layers,
+  History,
 } from "lucide-react";
 
 export function AppDock() {
@@ -36,7 +37,7 @@ export function AppDock() {
     },
     {
       title: "Bulk Generate",
-      icon: <Layers className="h-full w-full text-amber-400" />,
+      icon: <Sparkles className="h-full w-full text-amber-400" />,
       href: "/bulk",
     },
   ];
@@ -47,6 +48,11 @@ export function AppDock() {
           title: "My Collections",
           icon: <Layers className="h-full w-full text-cyan-400" />,
           href: "/collections",
+        },
+        {
+          title: "History",
+          icon: <History className="h-full w-full text-orange-400" />,
+          href: "/bulk/history",
         },
         {
           title: "Logout",
